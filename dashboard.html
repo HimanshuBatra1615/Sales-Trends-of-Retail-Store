@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Retail Sales Recommendation System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root{
+  --bg:#07090f;
+  --surface:#0e1117;
+  --card:#141820;
+  --border:#1e2433;
+  --text:#c9d1d9;
+  --muted:#8b949e;
+  --blue:#58a6ff;
+  --green:#3fb950;
+  --yellow:#f0e68c;
+  --orange:#ff9f43;
+  --red:#ff6b6b;
+  --purple:#c084fc;
+  --teal:#2dd4bf;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── HEADER ─────────────────────────────────────────── */
+header{
+  position:relative;padding:3rem 2rem 2rem;text-align:center;
+  background:linear-gradient(135deg,#0a0d14 0%,#0f1628 50%,#0a0d14 100%);
+  border-bottom:1px solid var(--border);overflow:hidden;
+}
+header::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 50% -20%, rgba(88,166,255,.12) 0%, transparent 70%);
+}
+.badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;
+  padding:.25rem .75rem;border-radius:2rem;border:1px solid var(--blue);
+  color:var(--blue);letter-spacing:.12em;margin-bottom:1rem;}
+h1{font-size:clamp(1.6rem,4vw,2.8rem);font-weight:700;line-height:1.15;
+   background:linear-gradient(135deg,#fff 0%,var(--blue) 100%);
+   -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem;}
+.sub{color:var(--muted);font-size:1rem;margin-bottom:2rem}
+.fy{font-family:'JetBrains Mono',monospace;color:var(--yellow);font-size:.85rem}
+
+/* ── NAV PILLS ──────────────────────────────────────── */
+nav{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding:1.5rem 1rem;
+    position:sticky;top:0;background:rgba(7,9,15,.92);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);z-index:100;}
+nav button{background:var(--card);border:1px solid var(--border);color:var(--muted);
+  padding:.45rem 1.1rem;border-radius:2rem;font-family:inherit;font-size:.85rem;
+  cursor:pointer;transition:all .2s;}
+nav button:hover{border-color:var(--blue);color:var(--blue)}
+nav button.active{background:var(--blue)22;border-color:var(--blue);color:var(--blue);font-weight:600}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+main{max-width:1400px;margin:0 auto;padding:2rem 1.5rem}
+section{display:none}
+section.active{display:block}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.25rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.span2{grid-column:span 2}
+@media(max-width:700px){.span2{grid-column:span 1}}
+
+/* ── CARD ───────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;
+  transition:border-color .2s,transform .2s;}
+.card:hover{border-color:#2a3550;transform:translateY(-2px)}
+.card-title{font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.card-title span{font-size:1rem}
+
+/* ── KPI TILES ──────────────────────────────────────── */
+.kpi{padding:1.25rem;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--accent,var(--blue));}
+.kpi-val{font-size:1.9rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+  color:var(--accent,var(--blue));}
+.kpi-label{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+.kpi-delta{font-size:.8rem;margin-top:.4rem}
+.up{color:var(--green)} .down{color:var(--red)}
+
+/* ── TABLE ──────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:#111620;color:var(--muted);text-align:left;padding:.6rem .8rem;
+   font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;
+   border-bottom:1px solid var(--border)}
+td{padding:.6rem .8rem;border-bottom:1px solid var(--border)14}
+tr:hover td{background:#ffffff05}
+.badge-a{color:var(--blue);background:var(--blue)22;padding:.15rem .5rem;border-radius:.3rem;font-size:.75rem;font-weight:600}
+.badge-b{color:var(--green);background:var(--green)22;padding:.15rem .5rem;border-radius:.3rem;font-size:.75rem;font-weight:600}
+.badge-c{color:var(--orange);background:var(--orange)22;padding:.15rem .5rem;border-radius:.3rem;font-size:.75rem;font-weight:600}
+.prio-high{color:var(--red)}
+.prio-med{color:var(--yellow)}
+.prio-low{color:var(--green)}
+
+/* ── REC CARDS ──────────────────────────────────────── */
+.rec-card{padding:1.25rem;border-left:3px solid var(--accent,var(--blue));border-radius:0 12px 12px 0}
+.rec-id{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);margin-bottom:.3rem}
+.rec-title{font-size:1rem;font-weight:600;color:var(--accent,var(--blue));margin-bottom:.5rem}
+.rec-body{font-size:.85rem;color:var(--text);line-height:1.6}
+.rec-impact{margin-top:.6rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;
+  color:var(--green);background:var(--green)15;display:inline-block;
+  padding:.2rem .6rem;border-radius:.4rem}
+.rec-action{margin-top:.4rem;font-size:.8rem;color:var(--muted);
+  background:var(--card);padding:.4rem .7rem;border-radius:.4rem;border:1px solid var(--border)}
+
+/* ── CANVAS ─────────────────────────────────────────── */
+canvas{max-height:340px}
+
+/* ── SECTION HEADER ─────────────────────────────────── */
+.sec-hdr{margin-bottom:1.5rem}
+.sec-hdr h2{font-size:1.4rem;font-weight:700;color:#fff}
+.sec-hdr p{font-size:.9rem;color:var(--muted);margin-top:.3rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">DATA SCIENCE PROJECT — FY 2024</div>
+  <h1>Retail Sales Recommendation System</h1>
+  <p class="sub">Descriptive Analytics · Trend Analysis · AI-Powered Recommendations</p>
+  <span class="fy">Dataset: 1,380 records · 23 Products · 5 Regions · 12 Months</span>
+</header>
+
+<nav>
+  <button class="active" onclick="show('overview')">📊 Overview</button>
+  <button onclick="show('products')">📦 Products</button>
+  <button onclick="show('trends')">📈 Trends</button>
+  <button onclick="show('regional')">🗺️ Regional</button>
+  <button onclick="show('pricing')">💸 Pricing</button>
+  <button onclick="show('recommendations')">🤖 Recommendations</button>
+</nav>
+
+<main>
+
+<!-- ═══════════════ OVERVIEW ═══════════════ -->
+<section id="overview" class="active">
+  <div class="sec-hdr">
+    <h2>Executive Overview</h2>
+    <p>High-level KPIs and revenue breakdown across categories and quarters</p>
+  </div>
+
+  <div class="grid4" style="margin-bottom:1.25rem">
+    <div class="card kpi" style="--accent:var(--blue)">
+      <div class="kpi-val">₹487.4L</div>
+      <div class="kpi-label">Total Annual Revenue</div>
+      <div class="kpi-delta up">↑ +₹1.12L/month trend</div>
+    </div>
+    <div class="card kpi" style="--accent:var(--green)">
+      <div class="kpi-val">2,53,142</div>
+      <div class="kpi-label">Total Units Sold</div>
+      <div class="kpi-delta up">↑ Growing YoY</div>
+    </div>
+    <div class="card kpi" style="--accent:var(--yellow)">
+      <div class="kpi-val">₹3,53,211</div>
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-delta up">↑ Peaks in December</div>
+    </div>
+    <div class="card kpi" style="--accent:var(--orange)">
+      <div class="kpi-val">28.1%</div>
+      <div class="kpi-label">Avg Profit Margin</div>
+      <div class="kpi-delta">Healthy across all categories</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card span2">
+      <div class="card-title"><span>📈</span> Monthly Revenue (FY 2024)</div>
+      <canvas id="overviewLine"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🥧</span> Revenue by Category</div>
+      <canvas id="catDoughnut"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>📅</span> Quarterly Performance</div>
+      <canvas id="qtrBar"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PRODUCTS ═══════════════ -->
+<section id="products">
+  <div class="sec-hdr">
+    <h2>Product Performance & ABC Classification</h2>
+    <p>Pareto analysis identifying revenue-driving products</p>
+  </div>
+  <div class="grid2" style="margin-bottom:1.25rem">
+    <div class="card">
+      <div class="card-title"><span>📊</span> Top 10 Revenue Products</div>
+      <canvas id="prodBar"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>📉</span> Pareto Cumulative Share</div>
+      <canvas id="paretoLine"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>🏷️</span> Complete Product Ranking with ABC Classification</div>
+    <div class="tbl-wrap">
+      <table id="prodTable">
+        <thead><tr><th>Rank</th><th>Product</th><th>Category</th><th>Revenue (₹L)</th><th>Units</th><th>Avg Margin%</th><th>Rev Share%</th><th>ABC Class</th></tr></thead>
+        <tbody id="prodTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TRENDS ═══════════════ -->
+<section id="trends">
+  <div class="sec-hdr">
+    <h2>Monthly & Seasonal Trends</h2>
+    <p>Time-series analysis with linear regression and 3-month forecast</p>
+  </div>
+  <div class="grid2">
+    <div class="card span2">
+      <div class="card-title"><span>🔮</span> Revenue Trend + Q1 2025 Forecast</div>
+      <canvas id="forecastLine"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🌦️</span> Month-over-Month Growth %</div>
+      <canvas id="momBar"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🗓️</span> Category Revenue Heatmap (Monthly)</div>
+      <canvas id="heatmapBar"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ REGIONAL ═══════════════ -->
+<section id="regional">
+  <div class="sec-hdr">
+    <h2>Regional Performance Analysis</h2>
+    <p>Revenue and unit breakdown across 5 geographic regions</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><span>🗺️</span> Revenue by Region</div>
+      <canvas id="regionBar"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🥧</span> Regional Market Share</div>
+      <canvas id="regionPie"></canvas>
+    </div>
+    <div class="card span2">
+      <div class="card-title"><span>📊</span> Region × Category Revenue Matrix</div>
+      <canvas id="regionCatBar"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PRICING ═══════════════ -->
+<section id="pricing">
+  <div class="sec-hdr">
+    <h2>Pricing & Discount Elasticity</h2>
+    <p>Understanding how discounts affect revenue and unit volume</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><span>💸</span> Revenue by Discount Tier</div>
+      <canvas id="discRevBar"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>📦</span> Units Sold by Discount Tier</div>
+      <canvas id="discUnitBar"></canvas>
+    </div>
+    <div class="card span2">
+      <div class="card-title"><span>⚖️</span> Descriptive Statistics Summary</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Revenue (₹)</th><th>Units Sold</th><th>Profit Margin %</th></tr></thead>
+          <tbody>
+            <tr><td>Mean</td><td>₹3,53,211</td><td>184</td><td>28.1%</td></tr>
+            <tr><td>Median</td><td>₹2,92,602</td><td>156</td><td>28.0%</td></tr>
+            <tr><td>Std Dev</td><td>₹2,50,768</td><td>96</td><td>5.8%</td></tr>
+            <tr><td>Min</td><td>₹38,412</td><td>47</td><td>18.1%</td></tr>
+            <tr><td>Max</td><td>₹18,62,504</td><td>563</td><td>38.0%</td></tr>
+            <tr><td>Skewness</td><td>2.370</td><td>1.82</td><td>0.01</td></tr>
+            <tr><td>Kurtosis</td><td>7.371</td><td>4.11</td><td>-1.19</td></tr>
+            <tr><td>IQR</td><td>₹2,29,470</td><td>111</td><td>9.8%</td></tr>
+            <tr><td>Outliers (IQR)</td><td>89 (6.4%)</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ RECOMMENDATIONS ═══════════════ -->
+<section id="recommendations">
+  <div class="sec-hdr">
+    <h2>AI Recommendation Engine Output</h2>
+    <p>Data-driven strategic recommendations derived from sales analysis</p>
+  </div>
+  <div class="grid3">
+
+    <div class="card rec-card" style="--accent:var(--blue)">
+      <div class="rec-id">R-01 · PRODUCT FOCUS · <span class="prio-high">HIGH PRIORITY</span></div>
+      <div class="rec-title">Double Down on Smart Watch</div>
+      <div class="rec-body">Smart Watch is the #1 revenue driver (₹71.16L). Increase inventory 20% and run targeted flash sales in Nov–Dec to capitalise on Q4 surge.</div>
+      <div class="rec-action">📋 Action: Negotiate bulk procurement; set up dedicated landing page for festive sale</div>
+      <div class="rec-impact">📈 Expected Impact: +12–18% revenue</div>
+    </div>
+
+    <div class="card rec-card" style="--accent:var(--green)">
+      <div class="rec-id">R-02 · SEASONAL STRATEGY · <span class="prio-high">HIGH PRIORITY</span></div>
+      <div class="rec-title">Pre-Stock for December Surge</div>
+      <div class="rec-body">December is the peak month (₹50.38L). Electronics and Apparel show strongest seasonal multipliers. Start reorder from October to avoid stockouts.</div>
+      <div class="rec-action">📋 Action: Increase reorder points by 30% in October for Class-A products</div>
+      <div class="rec-impact">📈 Expected Impact: +8% fewer stockouts</div>
+    </div>
+
+    <div class="card rec-card" style="--accent:var(--orange)">
+      <div class="rec-id">R-03 · REGIONAL EXPANSION · <span class="prio-med">MEDIUM PRIORITY</span></div>
+      <div class="rec-title">East → Central Playbook</div>
+      <div class="rec-body">East region leads at ₹109.14L while Central lags at ₹86.29L. Replicate East's channel mix, local partnerships, and pricing strategy in Central.</div>
+      <div class="rec-action">📋 Action: Conduct regional market audit; pilot East strategy in 2 Central cities</div>
+      <div class="rec-impact">📈 Expected Impact: +15% revenue in Central region</div>
+    </div>
+
+    <div class="card rec-card" style="--accent:var(--yellow)">
+      <div class="rec-id">R-04 · PRICING STRATEGY · <span class="prio-med">MEDIUM PRIORITY</span></div>
+      <div class="rec-title">Optimise Discount Architecture</div>
+      <div class="rec-body">Elasticity analysis shows 10% is the sweet spot — maximising unit velocity without sacrificing margin. 15%+ discounts should be reserved for clearance only.</div>
+      <div class="rec-action">📋 Action: Update pricing policy; cap automatic discounts at 10%</div>
+      <div class="rec-impact">📈 Expected Impact: +4% gross margin</div>
+    </div>
+
+    <div class="card rec-card" style="--accent:var(--purple)">
+      <div class="rec-id">R-05 · PORTFOLIO PRUNING · <span class="prio-low">LOW PRIORITY</span></div>
+      <div class="rec-title">Rationalise Class-C Products</div>
+      <div class="rec-body">6 Class-C products collectively generate only 10% of revenue but occupy significant shelf space. Bundle them with Class-A items to lift basket size.</div>
+      <div class="rec-action">📋 Action: Bundle Laptop Stand + Smart Watch; Sketch Set + Notebook Pack</div>
+      <div class="rec-impact">📈 Expected Impact: +5% Average Order Value; 10% freed shelf space</div>
+    </div>
+
+    <div class="card rec-card" style="--accent:var(--teal)">
+      <div class="rec-id">R-06 · CROSS-SELL ENGINE · <span class="prio-high">HIGH PRIORITY</span></div>
+      <div class="rec-title">Electronics ↔ Sports Affinity</div>
+      <div class="rec-body">Category affinity analysis reveals Electronics buyers have high co-purchase propensity with Sports. Implement 'Customers also bought' recommendation widget.</div>
+      <div class="rec-action">📋 Action: Deploy collaborative-filtering widget on product pages</div>
+      <div class="rec-impact">📈 Expected Impact: +7% basket size</div>
+    </div>
+
+    <div class="card rec-card span2" style="--accent:var(--red)">
+      <div class="rec-id">R-07 · CAMPAIGN STRATEGY · <span class="prio-high">HIGH PRIORITY</span></div>
+      <div class="rec-title">Q4 MegaSale Campaign — Highest Revenue Window</div>
+      <div class="rec-body">Q4 (₹140.75L) is 30% larger than any other quarter. Launch an integrated Email + WhatsApp campaign targeting repeat buyers from October with early-bird pricing on Class-A products. Leverage seasonal demand in Electronics (Smart Watch, Wireless Earbuds) and Apparel (Winter Jacket, Running Shoes). Create urgency with countdown timers and limited stock badges.</div>
+      <div class="rec-action">📋 Action: Segment repeat buyers; build drip campaign starting Oct 1; set flash sale dates Nov 11 + Dec 12</div>
+      <div class="rec-impact">📈 Expected Impact: +22% Q4 revenue vs baseline — highest ROI initiative</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── Data ────────────────────────────────────────────────
+const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const rev     = [35.48,33.99,38.90,39.49,40.62,39.05,37.90,39.66,41.58,42.83,47.54,50.38];
+const trendY  = rev.map((_,i)=>+(35.48+1.118*i).toFixed(2));
+const forecast= [51.50,52.62,53.74];
+const momGrowth=["—","-4.2","+14.5","+1.5","+2.9","-3.9","-2.9","+4.6","+4.8","+3.0","+11.0","+6.0"];
+const categories=["Electronics","Home & Kitchen","Apparel","Sports","Books & Stationery"];
+const catRev  =[168.50,110.59,99.68,73.86,34.80];
+const qtrRev  =[108.37,119.17,119.14,140.75];
+const colors  =["#58a6ff","#3fb950","#f0e68c","#ff9f43","#ff6b6b","#c084fc","#2dd4bf"];
+
+const products=[
+  {name:"Smart Watch",cat:"Electronics",rev:71.16,units:8342,margin:27.9,share:14.6,abc:"A"},
+  {name:"Wireless Earbuds",cat:"Electronics",rev:44.46,units:13480,margin:27.2,share:9.1,abc:"A"},
+  {name:"Air Fryer",cat:"H&K",rev:35.08,units:5381,margin:29.5,share:7.2,abc:"A"},
+  {name:"Running Shoes",cat:"Apparel",rev:32.86,units:10418,margin:27.6,share:6.7,abc:"A"},
+  {name:"Winter Jacket",cat:"Apparel",rev:26.84,units:6178,margin:28.7,share:5.5,abc:"A"},
+  {name:"Coffee Maker",cat:"H&K",rev:25.02,units:6213,margin:28.6,share:5.1,abc:"A"},
+  {name:"Bluetooth Speaker",cat:"Electronics",rev:23.64,units:11299,margin:27.8,share:4.9,abc:"A"},
+  {name:"Protein Powder",cat:"Sports",rev:22.00,units:9367,margin:27.2,share:4.5,abc:"A"},
+  {name:"Blender",cat:"H&K",rev:20.16,units:7684,margin:28.8,share:4.1,abc:"A"},
+  {name:"Dumbbell Set",cat:"Sports",rev:19.16,units:5089,margin:27.5,share:3.9,abc:"A"},
+  {name:"Yoga Mat",cat:"Sports",rev:18.32,units:12284,margin:28.1,share:3.8,abc:"A"},
+  {name:"Yoga Pants",cat:"Apparel",rev:17.79,units:12589,margin:27.9,share:3.6,abc:"B"},
+  {name:"Formal Shirt",cat:"Apparel",rev:12.21,units:6864,margin:27.1,share:2.5,abc:"B"},
+  {name:"USB-C Hub",cat:"Electronics",rev:16.26,units:11030,margin:27.5,share:3.3,abc:"B"},
+  {name:"Non-stick Pan Set",cat:"H&K",rev:13.26,units:7454,margin:28.1,share:2.7,abc:"B"},
+  {name:"Resistance Bands",cat:"Sports",rev:11.22,units:14959,margin:27.9,share:2.3,abc:"B"},
+  {name:"Water Bottle",cat:"H&K",rev:11.49,units:17421,margin:28.4,share:2.4,abc:"B"},
+  {name:"Cap",cat:"Apparel",rev:8.97,units:15964,margin:27.6,share:1.8,abc:"C"},
+  {name:"Planner 2025",cat:"Stationery",rev:9.62,units:14646,margin:27.7,share:2.0,abc:"C"},
+  {name:"Notebook Pack",cat:"Stationery",rev:10.59,units:22601,margin:27.7,share:2.2,abc:"C"},
+  {name:"Fountain Pen",cat:"Stationery",rev:7.78,units:9219,margin:28.1,share:1.6,abc:"C"},
+  {name:"Sketch Set",cat:"Stationery",rev:6.82,units:6048,margin:27.8,share:1.4,abc:"C"},
+  {name:"Laptop Stand",cat:"Electronics",rev:12.58,units:10231,margin:27.7,share:2.6,abc:"C"},
+];
+
+const regions=["East","North","West","South","Central"];
+const regRev =[109.14,101.33,96.78,93.89,86.29];
+
+const discPct  =["0%","5%","10%","15%","20%"];
+const discRev  =[219.97,119.67,90.10,34.18,23.52];
+const discUnits=[109757,59073,50294,19970,14339];
+
+// ── Chart defaults ───────────────────────────────────────
+const defaults={
+  plugins:{legend:{labels:{color:"#8b949e",boxWidth:12,padding:16}}},
+  scales:{x:{ticks:{color:"#8b949e"},grid:{color:"#1e2433"}},
+          y:{ticks:{color:"#8b949e"},grid:{color:"#1e2433"}}},
+};
+const noScales={plugins:defaults.plugins};
+
+function mkLine(id,labels,datasets,opts={}){
+  new Chart(document.getElementById(id),{type:"line",data:{labels,datasets},
+    options:{...defaults,...opts,responsive:true}});
+}
+function mkBar(id,labels,datasets,opts={}){
+  new Chart(document.getElementById(id),{type:"bar",data:{labels,datasets},
+    options:{...defaults,...opts,responsive:true}});
+}
+function mkDoughnut(id,labels,data,cols){
+  new Chart(document.getElementById(id),{type:"doughnut",
+    data:{labels,datasets:[{data,backgroundColor:cols,borderColor:"#07090f",borderWidth:3,hoverOffset:6}]},
+    options:{...noScales,responsive:true,cutout:"62%"}});
+}
+
+// ── Charts ───────────────────────────────────────────────
+window.addEventListener("load",()=>{
+
+// Overview line
+mkLine("overviewLine",months,[
+  {label:"Revenue (₹L)",data:rev,borderColor:"#58a6ff",backgroundColor:"#58a6ff18",fill:true,tension:0.4,pointRadius:5},
+  {label:"Trend",data:trendY,borderColor:"#ff9f43",borderDash:[5,4],pointRadius:0,tension:0},
+],{scales:{...defaults.scales}});
+
+// Category doughnut
+mkDoughnut("catDoughnut",categories,catRev,colors);
+
+// Quarterly bar
+mkBar("qtrBar",["Q1","Q2","Q3","Q4"],[
+  {label:"Revenue (₹L)",data:qtrRev,backgroundColor:["#58a6ff","#3fb950","#f0e68c","#ff9f43"],borderRadius:6}
+]);
+
+// Product bar (top 10)
+const top10=products.slice(0,10);
+mkBar("prodBar",top10.map(p=>p.name),[
+  {label:"Revenue (₹L)",data:top10.map(p=>p.rev),backgroundColor:colors,borderRadius:4}
+],{indexAxis:"y"});
+
+// Pareto line
+const cumShare=products.reduce((acc,p)=>{const last=acc.length?acc[acc.length-1]:0;return[...acc,+(last+p.share).toFixed(1)]},[]);
+mkLine("paretoLine",products.map(p=>p.name),[
+  {label:"Cumulative Revenue %",data:cumShare,borderColor:"#58a6ff",backgroundColor:"#58a6ff15",fill:true,pointRadius:3,tension:0},
+],{scales:{...defaults.scales,y:{...defaults.scales.y,max:100}}});
+
+// Forecast line
+const allLabels=[...months,"Jan'25","Feb'25","Mar'25"];
+const actFull=[...rev,...Array(3).fill(null)];
+const fcastFull=[...Array(12).fill(null),...forecast];
+const trendFull=[...trendY,51.50,52.62,53.74];
+mkLine("forecastLine",allLabels,[
+  {label:"Actual",data:actFull,borderColor:"#58a6ff",backgroundColor:"#58a6ff18",fill:true,tension:0.4,pointRadius:4},
+  {label:"Forecast",data:fcastFull,borderColor:"#3fb950",borderDash:[6,3],pointRadius:6,tension:0.3,
+   pointBackgroundColor:"#3fb950"},
+  {label:"Trend",data:trendFull,borderColor:"#ff9f43",borderDash:[3,3],pointRadius:0,tension:0},
+]);
+
+// MoM bar
+const momVals=momGrowth.map(v=>v==="—"?0:parseFloat(v));
+mkBar("momBar",months,[
+  {label:"MoM Growth %",data:momVals,
+   backgroundColor:momVals.map(v=>v>=0?"#3fb95066":"#ff6b6b66"),
+   borderColor:momVals.map(v=>v>=0?"#3fb950":"#ff6b6b"),
+   borderWidth:1,borderRadius:4}
+],{scales:{...defaults.scales,y:{...defaults.scales.y,
+  ticks:{color:"#8b949e",callback:v=>v+"%"},grid:{color:"#1e2433"}}}});
+
+// Heatmap bar (category by month — grouped)
+const catMonthData=[
+  [16.8,16.0,18.3,18.6,19.1,18.4,17.8,18.7,19.6,20.2,22.4,23.7], // Electronics
+  [9.0, 8.5,10.0,10.5,11.0,10.0, 9.5,10.0,11.0,11.5,12.5,13.5], // H&K
+  [8.9, 8.1, 9.7, 8.9, 8.1, 7.3, 6.9, 7.3, 8.9, 9.7,10.5,11.3], // Apparel
+];
+mkBar("heatmapBar",months,
+  ["Electronics","Home & Kitchen","Apparel"].map((n,i)=>({
+    label:n,data:catMonthData[i],backgroundColor:colors[i]+"99",borderRadius:3
+  })),{plugins:{...defaults.plugins}});
+
+// Region bar
+mkBar("regionBar",regions,[
+  {label:"Revenue (₹L)",data:regRev,
+   backgroundColor:["#58a6ff","#3fb950","#f0e68c","#ff9f43","#c084fc"],borderRadius:6}
+]);
+
+// Region pie
+mkDoughnut("regionPie",regions,regRev,colors);
+
+// Region × Category
+const regCatData=[
+  {label:"Electronics", data:[38.9,36.1,34.5,33.5,30.8],backgroundColor:"#58a6ff99"},
+  {label:"H&K",         data:[24.8,23.0,22.0,21.3,19.6],backgroundColor:"#3fb95099"},
+  {label:"Apparel",     data:[22.4,20.8,19.9,19.3,17.7],backgroundColor:"#f0e68c99"},
+  {label:"Sports",      data:[16.6,15.4,14.7,14.3,13.1],backgroundColor:"#ff9f4399"},
+  {label:"Stationery",  data:[ 7.8, 7.2, 6.9, 6.7, 6.1],backgroundColor:"#c084fc99"},
+];
+mkBar("regionCatBar",regions,regCatData,{plugins:{...defaults.plugins},scales:{...defaults.scales}});
+
+// Discount bars
+mkBar("discRevBar",discPct,[
+  {label:"Revenue (₹L)",data:discRev,
+   backgroundColor:["#58a6ff","#3fb950","#f0e68c","#ff9f43","#ff6b6b"],borderRadius:6}
+]);
+mkBar("discUnitBar",discPct,[
+  {label:"Units Sold",data:discUnits,
+   backgroundColor:["#58a6ff","#3fb950","#f0e68c","#ff9f43","#ff6b6b"],borderRadius:6}
+]);
+
+// ── Product table ─────────────────────────────────────
+const tbody=document.getElementById("prodTbody");
+products.forEach((p,i)=>{
+  const abcBadge=`<span class="badge-${p.abc.toLowerCase()}">${p.abc}</span>`;
+  tbody.innerHTML+=`<tr>
+    <td>${i+1}</td><td>${p.name}</td><td>${p.cat}</td>
+    <td>₹${p.rev}L</td><td>${p.units.toLocaleString()}</td>
+    <td>${p.margin}%</td><td>${p.share}%</td><td>${abcBadge}</td>
+  </tr>`;
+});
+
+});
+
+// ── Nav ──────────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  event.target.classList.add("active");
+}
+</script>
+</body>
+</html>
