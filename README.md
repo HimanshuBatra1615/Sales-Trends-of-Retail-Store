@@ -37,7 +37,7 @@ The interactive dashboard ensures a seamless and intuitive user experience, enab
 ## 📸 Preview  
 
 <p align="center">
-  <img src="https://via.placeholder.com/900x450.png?text=RetailAI+Dashboard+Preview" alt="Dashboard Preview"/>
+  <img src="dashboard.png?text=RetailAI+Dashboard+Preview" alt="Dashboard Preview"/>
 </p>
 
 ---
